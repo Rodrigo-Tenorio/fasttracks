@@ -1,6 +1,8 @@
 # fasttracks
 
 [![arXiv](https://img.shields.io/badge/arXiv-2411.18370-b31b1b.svg)](https://arxiv.org/abs/2411.18370)
+[![PyPI version](https://badge.fury.io/py/fasttracks.svg)](https://badge.fury.io/py/fasttracks)
+
 
 A massively-parallel engine to evaluate detection statistics for generic CW signals.
 
