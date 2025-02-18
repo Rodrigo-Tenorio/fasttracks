@@ -7,6 +7,13 @@
 
 A massively-parallel engine to evaluate detection statistics for generic CW signals.
 
+## Installation
+
+`fasttracks` is pip-installable:
+```
+$ pip install fasttracks
+```
+
 ## Citing this work
 
 If `fasttracks` was useful to your research, we would appreciate if you cited
