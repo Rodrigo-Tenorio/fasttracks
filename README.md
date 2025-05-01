@@ -22,14 +22,18 @@ implementation was first presented:
 ```
 @article{Tenorio:2024jgc,
     author = "Tenorio, Rodrigo and M\'erou, Joan-Ren\'e and Sintes, Alicia M.",
-    title = "{A one-stop strategy to search for long-duration gravitational-wave signals}",
+    title = "{One-stop strategy to search for long-duration gravitational-wave signals}",
     eprint = "2411.18370",
     archivePrefix = "arXiv",
     primaryClass = "gr-qc",
     reportNumber = "LIGO-P2400425",
-    month = "11",
-    year = "2024",
-    journal = "arXiv e-prints"
+    doi = "10.1103/PhysRevD.111.104002",
+    journal = "Phys. Rev. D",
+    volume = "111",
+    number = "10",
+    pages = "104002",
+    year = "2025"
 }
+
 ```
 as well as a Zenodo release of this software.
