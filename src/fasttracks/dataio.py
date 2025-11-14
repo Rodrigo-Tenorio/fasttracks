@@ -5,7 +5,6 @@ import lal
 import lalpulsar
 import numpy as np
 from pyfstat import DetectorStates
-from pyfstat.utils import get_sft_as_arrays
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +15,7 @@ class SFTDataIO:
         sftfilepath: str,
         freq_min: float = -1,
         freq_max: float = -1,
+        power: bool = True,
         running_median_window: int = lalpulsar.FstatOptionalArgsDefaults.runningMedianWindow,
     ):
         """
@@ -27,20 +27,23 @@ class SFTDataIO:
         freq_max:
             Minimum SFT frequency to load. `-1` means the highest frequency
             present on the file.
+        power:
+            Whether to return real power (|x|^2) or complex Fourier amplitudes
         running_median_window:
             Number of bins to compute a running median. Defaults to lalpulsar's default.
-            Basically don't touch it unless you know what you are doing.
+            Basically don't touch it unless you know what you are doing
         """
         self.sftfilepath = sftfilepath
         self.freq_min = freq_min
         self.freq_max = freq_max
+        self.power = power
         self.running_median_window = running_median_window
 
         self._get_data_from_sfts()
 
     def __call__(self, sky_position: tuple[float, float] | None = None):
         """
-        Returns SFT power, timestamps, velocities, and weights
+        Returns SFT data, timestamps, velocities, and weights
         for a given sky position so that JAX can operate on them.
 
         Weights are normalized so that `weights.sum() == 1`.
@@ -52,9 +55,9 @@ class SFTDataIO:
 
         Returns
         ---------
-        tuple[power, timestamps, velocities, weights, t_sft, bin_0]
+        tuple[data, timestamps, velocities, weights, t_sft, bin_0]
         """
-        power = jnp.hstack([val["power"] for val in self.multisft_data.values()])
+        data = jnp.hstack([val["data"] for val in self.multisft_data.values()])
         timestamps = jnp.hstack(
             [val["timestamps"] for val in self.multisft_data.values()]
         )
@@ -66,7 +69,7 @@ class SFTDataIO:
         weights = weights / weights.sum()
 
         return (
-            power,
+            data,
             timestamps,
             velocities,
             weights,
@@ -97,7 +100,7 @@ class SFTDataIO:
     def _get_data_from_sfts(self):
         """
         Uses PyFstat's get_sfts_as_arrays function to get the SFT's
-        frequencies, timestamps, power, and noise weights.
+        frequencies, timestamps, data, and noise weights.
         """
         logger.info(f"Parsing SFT catalog from {self.sftfilepath}...")
         sft_catalog = lalpulsar.SFTdataFind(self.sftfilepath, None)
@@ -143,7 +146,11 @@ class SFTDataIO:
 
         self.multisft_data = {}
         for ifo_ind, ifo_name in enumerate(ifo_labels.data):
-            logging.debug(f"Reading data from IFO {ifo_name}")
+            logging.debug(
+                "Reading "
+                + ("power" if self.power else "amplitude")
+                + " from IFO {ifo_name}"
+            )
 
             sfts = multi_sfts.data[ifo_ind]
             sft_amplitude = np.array([sft.data.data for sft in sfts.data]).T
@@ -154,12 +161,14 @@ class SFTDataIO:
             sft_data["timestamps"] = np.array(
                 [sft.epoch.gpsSeconds for sft in sfts.data]
             )
-            sft_data["power"] = 2.0 * (
-                sft_amplitude.real**2 + sft_amplitude.imag**2
-            )
+            if self.power:
+                sft_data["data"] = 2.0 * (sft_amplitude.real**2 + sft_amplitude.imag**2)
+            else:
+                sft_data["data"] = np.sqrt(2.0) * sft_amplitude
+
             sft_data["noise_weights"] = multi_noise_weights.data[ifo_ind].data
 
-            nbins, nsfts = sft_data["power"].shape
+            nbins, nsfts = sft_data["data"].shape
 
             sft_data["frequency_Hz"] = np.linspace(f0, f0 + (nbins - 1) * df, nbins)
             sft_data["t_sft"] = int(
